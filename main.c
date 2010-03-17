@@ -157,11 +157,12 @@ void update() {
 
         dummy = tmp->next;
         if(dst.y > _Y) {
-            if (tmp == fee) {
+            if (tmp->prev == NULL) {
                 fee = tmp->next;
-                if(fee)
+                if (fee)
                     fee->prev = NULL;
-            } else if (tmp == lee) {
+            }
+            if (tmp->next == NULL) {
                 lee = tmp->prev;
                 if(lee)
                     lee->next = NULL;
@@ -246,18 +247,20 @@ void update() {
                     dst.w = tmp->img->w/3;
                     dst.h = tmp->img->h;
                     SDL_FillRect(screen,&dst,0x000);
-                    if (tmp == fee) {
+                    if (tmp->prev == NULL) {
                         fee = tmp->next;
                         if(fee)
                             fee->prev = NULL;
-                    } else if (tmp == lee) {
+                    } 
+                    if (tmp->next == NULL) {
                         lee = tmp->prev;
                         if (lee)
                             lee->next = NULL;
-                    } else {
-                        tmp->prev->next = tmp->next;
-                        tmp->next->prev = tmp->prev;
                     }
+                    if (tmp->next)
+                        tmp->prev->next = tmp->next;
+                    if (tmp->prev);
+                        tmp->next->prev = tmp->prev;
                     free(tmp);
                     ne--;
                 }
