@@ -39,7 +39,6 @@ int events(SDL_Event event) {
                             lee->img = SC_LoadImage(SC_Interceptor.path);
                             lee->move = SC_sin;
                             if(fee == NULL) {
-                                printf("cfee\n");
                                 lee->prev = NULL;
                                 lee->next = NULL;
                                 fee = lee;
@@ -157,20 +156,24 @@ void update() {
 
         dummy = tmp->next;
         if(dst.y > _Y) {
-            if (tmp->prev == NULL) {
+            if ((tmp == fee) && (tmp == lee)) {
+                printf("solohaiuno\n");
+                fee = NULL;
+                lee = NULL;
+            } else if (tmp == fee) {
+                printf("primero\n");
                 fee = tmp->next;
-                if (fee)
-                    fee->prev = NULL;
-            }
-            if (tmp->next == NULL) {
+                fee->prev = NULL;
+            } else if (tmp == lee) {
+                printf("ultimo\n");
                 lee = tmp->prev;
-                if(lee)
-                    lee->next = NULL;
+                lee->next = NULL;
             } else {
+                printf("delmedio\n");
                 tmp->prev->next = tmp->next;
                 tmp->next->prev = tmp->prev;
             }
-            free(tmp);
+           free(tmp);
             ne--;
         }
         tmp = dummy;
@@ -247,22 +250,22 @@ void update() {
                     dst.w = tmp->img->w/3;
                     dst.h = tmp->img->h;
                     SDL_FillRect(screen,&dst,0x000);
-                    if (tmp->prev == NULL) {
+                    if ((tmp == fee) && (tmp == lee)) {
+                        fee = NULL;
+                        lee = NULL;
+                    } else if (tmp == fee) {
                         fee = tmp->next;
-                        if(fee)
-                            fee->prev = NULL;
-                    } 
-                    if (tmp->next == NULL) {
+                        fee->prev = NULL;
+                    } else if (tmp == lee) {
                         lee = tmp->prev;
-                        if (lee)
-                            lee->next = NULL;
-                    }
-                    if (tmp->next)
+                        lee->next = NULL;
+                    } else {
                         tmp->prev->next = tmp->next;
-                    if (tmp->prev);
                         tmp->next->prev = tmp->prev;
+                    }
                     free(tmp);
                     ne--;
+                    break;
                 }
             }
         }
