@@ -36,7 +36,7 @@ int events(SDL_Event event) {
                             lee->from = _X/2;
                             lee->x = _X/2;
                             lee->y = 10;
-                            lee->img = SC_LoadImage(SC_Interceptor.path);
+                            lee->img = SC_LoadImage(SC_Interceptor);
                             lee->move = SC_sin;
                             if(fee == NULL) {
                                 lee->prev = NULL;
@@ -47,13 +47,6 @@ int events(SDL_Event event) {
                                 tmp->next = lee;
                             }
                             lee->next = NULL;
-
-                            enemies[le] = SC_Interceptor;
-                            enemies[le].from = _X/2;
-                            enemies[le].img = SC_LoadImage(SC_Interceptor.path);
-                            enemies[le].move = SC_sin;
-                            ne++;
-                            le = (le+1) % _MAX_ENEMIES;
                         }
                         break;
                     case SDLK_q:

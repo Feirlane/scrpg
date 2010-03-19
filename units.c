@@ -11,9 +11,4 @@ struct SC_Unit {
     struct SC_Unit* next;
     struct SC_Unit* prev;
 };
-
-struct SC_Unit SC_Interceptor = {
-    "data/img/interceptor.bmp",
-    NULL,
-    100, 10, 0, 0, 0, 0, 0, 0, NULL};
-/*   hp, ap, x, y,ax,ay,cnt,frm,move*/
+char* SC_Interceptor = "data/img/interceptor.bmp";
