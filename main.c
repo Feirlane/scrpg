@@ -4,55 +4,74 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 #define _X 800
 #define _Y 600
 #define _DEPTH 32
 #define FRICTION 0.9
-#define _MAX_ENEMIES 10
-#define _MAX_SHOTS 10
 
 SDL_Surface *screen;
 struct SC_Unit player;
-struct SC_Unit enemies[_MAX_ENEMIES];
-SDL_Rect shots[_MAX_SHOTS];
-int lr,ud; /* Left(-1) Right(+1); Up(+1) Down(-1) movement */
-int ns,fs,ls = 0; /* Number of Shots; First Shot; Last Shot */
-int ne,fe,le =0; /* N enemies; Last Enemy; First Enemy */
-struct SC_Unit *fee=NULL,*lee=NULL,*tmp=NULL;
+int lr,ud,s; /* Left(-1) Right(+1); Up(+1) Down(-1) movement; s=shooting*/
+struct SC_Unit *fe=NULL, *le=NULL,*tmpe=NULL;
+int lastEnemyTick = 0;
+struct SC_Shot *fs=NULL, *ls=NULL, *tmps=NULL;
+int lastShotTick = 0;
+int points=0;
 
 double SC_sin (double x) {
     return 100*sin(x/50);
 }
+void makeShot() {
+    tmps = ls;
+    ls = malloc(sizeof(struct SC_Shot));
+    ls->dst.w = 8;
+    ls->dst.h = 8;
+    ls->dst.x = player.x + player.img->w/6 - ls->dst.w/2;
+    ls->dst.y = player.y - ls->dst.h;
+    if (!fs) {
+        ls->next = NULL;
+        ls->prev = NULL;
+        fs = ls;
+    } else {
+        ls->prev = tmps;
+        tmps->next = ls;
+    }
+    ls->next = NULL;
+}
+
+void makeEnemy(int from) {
+    tmpe = le;
+    le = malloc(sizeof(struct SC_Unit));
+    le->from = from;
+    le->x = _X/2;
+    le->y = 10;
+    le->img = SC_LoadImage(SC_Interceptor);
+    le->move = SC_sin;
+    if(fe == NULL) {
+        le->prev = NULL;
+        le->next = NULL;
+        fe = le;
+    } else {
+        le->prev = tmpe;
+        tmpe->next = le;
+    }
+    le->next = NULL;
+}
+ 
 int events(SDL_Event event) {
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
                     case SDLK_1:
-                        if(ne < _MAX_ENEMIES-1){
-                            tmp = lee;
-                            lee = malloc(sizeof(struct SC_Unit));
-                            lee->from = _X/2;
-                            lee->x = _X/2;
-                            lee->y = 10;
-                            lee->img = SC_LoadImage(SC_Interceptor);
-                            lee->move = SC_sin;
-                            if(fee == NULL) {
-                                lee->prev = NULL;
-                                lee->next = NULL;
-                                fee = lee;
-                            } else {
-                                lee->prev = tmp;
-                                tmp->next = lee;
-                            }
-                            lee->next = NULL;
-                        }
-                        break;
+                        makeEnemy(_X/2);
+                       break;
                     case SDLK_q:
                         return 1;
                         break;
-                     case SDLK_LEFT:
+                    case SDLK_LEFT:
                         lr--;
                         break;
                     case SDLK_UP:
@@ -65,18 +84,11 @@ int events(SDL_Event event) {
                         ud++;
                         break;
                     case SDLK_SPACE:
-                        if(ns < _MAX_SHOTS-1){
-                            shots[ls].x=player.x + player.img->w/6 - 5;
-                            shots[ls].y=player.y+10;
-                            shots[ls].w=10;
-                            shots[ls].h=10;
-                            ns++;
-                            ls = (ls+1) % _MAX_SHOTS;
-                        }
-                        break;
+                        s++;
+                       break;
                     default:
                         break;
-               }
+                }
                 break;
             case SDL_KEYUP:
                 switch(event.key.keysym.sym) {
@@ -92,6 +104,9 @@ int events(SDL_Event event) {
                     case SDLK_DOWN:
                         ud--;
                         break;
+                    case SDLK_SPACE:
+                        s--;
+                        break;
                     default:
                         break;
                 }
@@ -106,10 +121,19 @@ int events(SDL_Event event) {
     return 0;
 }
 void update() {
-    struct SC_Unit *dummy;
+    struct SC_Unit *dummye;
+    struct SC_Shot *dummys;
     SDL_Rect src,dst;
-    int i,j;
-/*    int g;*/
+
+    if((SDL_GetTicks() - lastEnemyTick) > 500) {
+        makeEnemy((_X/2 + ((rand()%300) - 150)));
+        lastEnemyTick = SDL_GetTicks();
+    }
+
+    if(s && ((SDL_GetTicks() - lastShotTick) > 100)) {
+        makeShot();
+        lastShotTick = SDL_GetTicks();
+    }
 
     player.ay += (1.5*ud);
     player.ax += (1.5*lr);
@@ -127,143 +151,113 @@ void update() {
     player.x += player.ax;
     player.y += player.ay;
 
-    tmp = fee;
-    while (tmp) {
-        dst.x = tmp->x;
-        dst.y = tmp->y;
-        dst.w = tmp->img->w/3;
-        dst.h = tmp->img->h;
+    tmpe = fe;
+    while (tmpe) {
+        dst.x = tmpe->x;
+        dst.y = tmpe->y;
+        dst.w = tmpe->img->w/3;
+        dst.h = tmpe->img->h;
         SDL_FillRect(screen,&dst,0x000000);
-        tmp->x = tmp->from + tmp->move(tmp->y);
-        tmp->y += 3;
+        tmpe->x = tmpe->from + tmpe->move(tmpe->y);
+        tmpe->y += 3;
 
         src.y=0;
         src.x=0;
-        src.h=tmp->img->h;
-        src.w=tmp->img->w/3;
+        src.h=tmpe->img->h;
+        src.w=tmpe->img->w/3;
 
-        dst.x = tmp->x;
-        dst.y = tmp->y;
+        dst.x = tmpe->x;
+        dst.y = tmpe->y;
 
-        SDL_BlitSurface(tmp->img,&src,screen,&dst);
+        SDL_BlitSurface(tmpe->img,&src,screen,&dst);
 
-        dummy = tmp->next;
+        dummye = tmpe->next;
         if(dst.y > _Y) {
-            if ((tmp == fee) && (tmp == lee)) {
-                printf("solohaiuno\n");
-                fee = NULL;
-                lee = NULL;
-            } else if (tmp == fee) {
-                printf("primero\n");
-                fee = tmp->next;
-                fee->prev = NULL;
-            } else if (tmp == lee) {
-                printf("ultimo\n");
-                lee = tmp->prev;
-                lee->next = NULL;
+            if ((tmpe == fe) && (tmpe == le)) {
+                fe = NULL;
+                le = NULL;
+            } else if (tmpe == fe) {
+                fe = tmpe->next;
+                fe->prev = NULL;
+            } else if (tmpe == le) {
+                le = tmpe->prev;
+                le->next = NULL;
             } else {
-                printf("delmedio\n");
-                tmp->prev->next = tmp->next;
-                tmp->next->prev = tmp->prev;
+                tmpe->prev->next = tmpe->next;
+                tmpe->next->prev = tmpe->prev;
             }
-           free(tmp);
-            ne--;
+            free(tmpe);
         }
-        tmp = dummy;
+        tmpe = dummye;
     }
-    /*        for(i=fe;i!=le;i=(i+1)%_MAX_ENEMIES){
-              dst.x = enemies[i].x;
-              dst.y = enemies[i].y;
-              dst.w = enemies[i].img->w/3;
-              dst.h = enemies[i].img->h;
-              SDL_FillRect(screen,&dst,0x000);
-
-
-              g = enemies[i].x;
-              enemies[i].x = enemies[i].from + enemies[i].move(enemies[i].y);
-              enemies[i].y += 3;
-
-              if(enemies[i].x > g)
-              src.x=(enemies[i].img->w/3)*2;
-              else if (enemies[i].x < g)
-              src.x=enemies[i].img->w/3;
-              else
-                src.x=0;
-            src.y=0;
-            src.h=enemies[i].img->h;
-            src.w=enemies[i].img->w/3;
-
-            dst.x=enemies[i].x;
-            dst.y=enemies[i].y;
-            dst.h=enemies[i].img->h;
-            dst.w=enemies[i].img->w/3;
-
-            SDL_BlitSurface(enemies[i].img,&src,screen,&dst);
-
-            if(dst.y > _Y) {
-                fe = (fe+1)%_MAX_ENEMIES;
-                ne--;
-            }
-        }
-        */
-    if (ns) {
-        for(i=fs;i!=ls;i=(i+1)%_MAX_SHOTS){
-            SDL_FillRect(screen,&shots[i],0x000000);
-            shots[i].y -= 12;
-            if(shots[i].y <= 0){
-                ns--;
-                fs = (fs+1) % _MAX_SHOTS;
+    tmps = fs;
+    while(tmps) {
+        dummys = tmps->next;
+        SDL_FillRect(screen,&tmps->dst,0x000000);
+        tmps->dst.y -= 12;
+        dst = tmps->dst;
+        if(tmps->dst.y <= 0){
+            if ((tmps == fs) && (tmps == ls)) {
+                fs = NULL;
+                ls = NULL;
+            } else if (tmps == fs) {
+                fs = tmps->next;
+                fs->prev = NULL;
+            } else if (tmps == ls) {
+                ls = tmps->prev;
+                ls->next = NULL;
             } else {
-            SDL_FillRect(screen,&shots[i],0xFF0000);
+                tmps->prev->next = tmps->next;
+                tmps->next->prev = tmps->prev;
             }
+            free(tmps);
+        } else {
+            SDL_FillRect(screen,&dst,0xFF0000);
         }
+        tmps = dummys;
     }
-    tmp = fee;
-    while(tmp) {
-        dummy = tmp->next;
-        if (((player.x + player.img->w/3 > tmp->x) && (player.x < tmp->x + tmp->img->w/3))){
-            if(((player.y + player.img->h) > tmp->y) && (player.y < (tmp->y + tmp->img->h))){
+    tmpe = fe;
+    while(tmpe) {
+        dummye = tmpe->next;
+        if (((player.x + player.img->w/3 > tmpe->x) && (player.x < tmpe->x + tmpe->img->w/3))){
+            if(((player.y + player.img->h) > tmpe->y) && (player.y < (tmpe->y + tmpe->img->h))){
                 player.x = -200;
                 player.y = -200;
             }
         }
-/*    for(i=fe;i!=le;i=(i+1)%_MAX_ENEMIES){
-        if (((player.x + player.img->w/3) > enemies[i].x) && (player.x < (enemies[i].x + enemies[i].img->w/3))){
-            if (((player.y + player.img->h) > enemies[i].y) && (player.y < (enemies[i].y + enemies[i].img->h))) {
-                player.x=-200;
-                player.y=-200;
-            }
-        }
-        */
-        for(j=fs;j!=ls;j=(j+1)%_MAX_SHOTS){
-            if(((shots[j].x + 10) > tmp->x) && (shots[j].x < (tmp->x + tmp->img->w/3))) {
-                if (((shots[j].y + 10) > tmp->y) && (shots[j].y < (tmp->y + tmp->img->h))) {
-                    dst.x = tmp->x;
-                    dst.y = tmp->y;
-                    dst.w = tmp->img->w/3;
-                    dst.h = tmp->img->h;
+        tmps = fs;
+        while(tmps){
+            dummys = tmps->next;
+            if(((tmps->dst.x + tmps->dst.w) > tmpe->x) && (tmps->dst.x < (tmpe->x + tmpe->img->w/3))) {
+                if (((tmps->dst.y + tmps->dst.h) > tmpe->y) && (tmps->dst.y < (tmpe->y + tmpe->img->h))) {
+                    dst.x = tmpe->x;
+                    dst.y = tmpe->y;
+                    dst.w = tmpe->img->w/3;
+                    dst.h = tmpe->img->h;
                     SDL_FillRect(screen,&dst,0x000);
-                    if ((tmp == fee) && (tmp == lee)) {
-                        fee = NULL;
-                        lee = NULL;
-                    } else if (tmp == fee) {
-                        fee = tmp->next;
-                        fee->prev = NULL;
-                    } else if (tmp == lee) {
-                        lee = tmp->prev;
-                        lee->next = NULL;
+                    if ((tmpe == fe) && (tmpe == le)) {
+                        fe = NULL;
+                        le = NULL;
+                    } else if (tmpe == fe) {
+                        fe = tmpe->next;
+                        fe->prev = NULL;
+                    } else if (tmpe == le) {
+                        le = tmpe->prev;
+                        le->next = NULL;
                     } else {
-                        tmp->prev->next = tmp->next;
-                        tmp->next->prev = tmp->prev;
+                        tmpe->prev->next = tmpe->next;
+                        tmpe->next->prev = tmpe->prev;
                     }
-                    free(tmp);
-                    ne--;
+                    free(tmpe);
+                    points+=2;
                     break;
                 }
             }
+            tmps=dummys;
         }
-        tmp = dummy;
+        tmpe = dummye;
     }
+    points %= 100;
 }
 
 void loadPlayer() {
@@ -296,6 +290,14 @@ int render() {
     }
 
     SDL_BlitSurface(player.img,&src,screen,&dst);
+    dst.x=5;
+    dst.y=5;
+    dst.h=5;
+    dst.w=100;
+    if(!points)
+        SDL_FillRect(screen,&dst,0x000);
+    dst.w=points;
+    SDL_FillRect(screen,&dst,0x0F0);
     SDL_Flip(screen);
 
     if (SDL_MUSTLOCK(screen))
@@ -314,9 +316,12 @@ int main() {
     printf("Loading Player...");
     loadPlayer();
     printf("\tOK\n");
+
+    srand(time(NULL));
+
     while(!quit){
 
-        update(enemies);
+        update();
 
         quit = quit | events(event) | render();;
 

@@ -11,4 +11,9 @@ struct SC_Unit {
     struct SC_Unit* next;
     struct SC_Unit* prev;
 };
+struct SC_Shot {
+    SDL_Rect dst;
+    struct SC_Shot* next;
+    struct SC_Shot* prev;
+};
 char* SC_Interceptor = "data/img/interceptor.bmp";
