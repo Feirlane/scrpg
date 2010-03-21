@@ -1,9 +1,9 @@
 struct SC_Unit {
     char* path;
     SDL_Surface* img;
+    SDL_Rect dst;
     int hp;
     int ap;
-    double x,y;
     double ax,ay;
     double center;
     double from;

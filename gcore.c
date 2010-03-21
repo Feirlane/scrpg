@@ -8,7 +8,7 @@ SDL_Surface* SC_InitVideo(int x, int y, int depth) {
 		printf("Init video error\n");
 		return NULL;
 	}
-	surface = SDL_SetVideoMode(x,y,depth, SDL_DOUBLEBUF);
+	surface = SDL_SetVideoMode(x,y,depth, SDL_DOUBLEBUF | SDL_ANYFORMAT);
 	if (surface == NULL) {
 		printf("Unable to set video mode:%s\n",SDL_GetError());
 		return NULL;
