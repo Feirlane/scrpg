@@ -32,3 +32,35 @@ SDL_Surface* SC_LoadImage(char* filename) {
 
 	return image;
 }
+
+void SC_DrawSurface(double x, double y, SDL_Surface* image, SDL_Surface* screen) {
+    SDL_Rect src,dst;
+
+    src.x=0;
+    src.y=0;
+    src.w=image->w;
+    src.h=image->h;
+
+    dst.x=x;
+    dst.y=y;
+    dst.w=image->w;
+    dst.h=image->h;
+
+    SDL_BlitSurface(image,&src,screen,&dst);
+}
+
+void SC_DrawPartialSurface(double srcx, double srcy, double x, double y, double w, double h, SDL_Surface* image, SDL_Surface* screen) {
+    SDL_Rect src,dst;
+
+    src.x=srcx;
+    src.y=srcy;
+    src.w=w;
+    src.h=h;
+
+    dst.x=x;
+    dst.y=y;
+    dst.w=w;
+    dst.h=h;
+
+    SDL_BlitSurface(image,&src,screen,&dst);
+}

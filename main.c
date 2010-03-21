@@ -9,14 +9,15 @@
 #define _X 800
 #define _Y 600
 #define _DEPTH 32
-#define FRICTION 0.9
+#define FRICTION (double)0.9
 
 SDL_Surface *screen;
 SDL_Surface *background;
 int bgy=0;
 int lastRenderTick=0;
+int lastBgRenderTick=0;
 struct SC_Unit player;
-int lr,ud,s; /* Left(-1) Right(+1); Up(+1) Down(-1) movement; s=shooting*/
+int lr=0,ud=0,s; /* Left(-1) Right(+1); Up(+1) Down(-1) movement; s=shooting*/
 struct SC_Unit *fe=NULL, *le=NULL,*tmpe=NULL;
 int lastEnemyTick = 0;
 struct SC_Shot *fs=NULL, *ls=NULL, *tmps=NULL;
@@ -130,7 +131,7 @@ void update() {
     struct SC_Shot *dummys;
 
     if((SDL_GetTicks() - lastEnemyTick) > 100) {
-        makeEnemy((_X/2 + ((rand()%300) - 150)));
+/*        makeEnemy((_X/2 + ((rand()%300) - 150))); */
         lastEnemyTick = SDL_GetTicks();
     }
 
@@ -144,6 +145,11 @@ void update() {
 
     player.ax *= FRICTION;
     player.ay *= FRICTION;
+
+    if (player.ax * player.ax < 0.1)
+        player.ax = 0;
+    if (player.ay * player.ay < 0.1)
+        player.ay = 0;
 
     player.dst.x += player.ax;
     player.dst.y += player.ay;
@@ -245,25 +251,36 @@ void loadPlayer() {
 int render() {
     SDL_Rect src,dst;
 
-    if((SDL_GetTicks() - lastRenderTick) > 40) {
+    if((SDL_GetTicks() - lastRenderTick) > 20) {
         lastRenderTick = SDL_GetTicks();
         if(SDL_MUSTLOCK(screen))
             if (SDL_LockSurface(screen) < 0)
                 return 1;
 
-        src.x=background->w/6;
-        src.y=background->h - _Y + bgy;
-        src.w=2*_X/3;
-        src.h=_Y;
+        if (((SDL_GetTicks() - lastBgRenderTick) > 40) && 0) {
+            lastBgRenderTick = SDL_GetTicks();
+            src.x=background->w/6;
+            src.y=background->h - _Y + bgy;
+            src.w=2*_X/3;
+            src.h=_Y;
 
-        bgy--;
+            bgy--;
 
-        dst.x=_X/6;
-        dst.y=0;
-        dst.w=2*_X/3;
-        dst.h=_Y;
+            dst.x=_X/6;
+            dst.y=0;
+            dst.w=2*_X/3;
+            dst.h=_Y;
 
-        SDL_BlitSurface(background,&src,screen,&dst);
+            SDL_BlitSurface(background,&src,screen,&dst);
+        }
+
+        tmpe = fe;
+        while(tmpe) {
+            SC_DrawPartialSurface(tmpe->dst.x,tmpe->dst.y,tmpe->dst.x,tmpe->dst.y,tmpe->img->w,tmpe->img->h,background,screen);
+            tmpe = tmpe->next;
+        }
+
+        update();
 
         src.x=(player.img->w/3) + (player.img->w/3*lr);
         src.y=0;
@@ -329,13 +346,13 @@ int main() {
 
     background = SC_LoadImage("data/img/map.bmp");
 
+    SC_DrawSurface(0,0,background,screen);
+
     srand(time(NULL));
 
     while(!quit){
 
-        update();
-
-        quit = quit | events(event) | render();;
+        quit = quit | events(event) | render();
 
         SDL_Delay(12);
     }
