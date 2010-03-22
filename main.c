@@ -30,8 +30,7 @@ double SC_sin (double x) {
 void makeShot() {
     tmps = ls;
     ls = malloc(sizeof(struct SC_Shot));
-    ls->dst.w = 8;
-    ls->dst.h = 8;
+    *ls = shot;
     ls->dst.x = player.dst.x + player.dst.w/3 - ls->dst.w/2;
     ls->dst.y = player.dst.y - ls->dst.h;
     if (!fs) {
@@ -45,16 +44,12 @@ void makeShot() {
     ls->next = NULL;
 }
 
-void makeEnemy(int from) {
+void makeEnemy(int from,struct SC_Unit unit) {
     tmpe = le;
     le = malloc(sizeof(struct SC_Unit));
+    *le = unit;
     le->from = from;
-    le->img = SC_LoadImage(SC_Interceptor);
-    le->dst.x = _X/2;
     le->dst.y = 10;
-    le->dst.w = le->img->w/3;
-    le->dst.h = le->img->h;
-    le->move = SC_sin;
     if(fe == NULL) {
         le->prev = NULL;
         le->next = NULL;
@@ -72,7 +67,7 @@ int events(SDL_Event event) {
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
                     case SDLK_1:
-                        makeEnemy(_X/2);
+                        makeEnemy(_X/2,SC_Interceptor);
                        break;
                     case SDLK_q:
                         return 1;
@@ -130,8 +125,8 @@ void update() {
     struct SC_Unit *dummye;
     struct SC_Shot *dummys;
 
-    if((SDL_GetTicks() - lastEnemyTick) > 100) {
-/*        makeEnemy((_X/2 + ((rand()%300) - 150))); */
+    if((SDL_GetTicks() - lastEnemyTick) > 200) {
+        makeEnemy((_X/2 + ((rand()%300) - 150)), SC_Interceptor);
         lastEnemyTick = SDL_GetTicks();
     }
 
@@ -140,19 +135,28 @@ void update() {
         lastShotTick = SDL_GetTicks();
     }
 
-    player.ay += (1.5*ud);
-    player.ax += (1.5*lr);
+    player.ay += (2.5*ud);
+    player.ax += (2.5*lr);
 
     player.ax *= FRICTION;
     player.ay *= FRICTION;
 
-    if (player.ax * player.ax < 0.1)
+    if (player.ax * player.ax < 0.01)
         player.ax = 0;
-    if (player.ay * player.ay < 0.1)
+    if (player.ay * player.ay < 0.01)
         player.ay = 0;
 
     player.dst.x += player.ax;
     player.dst.y += player.ay;
+
+    if(player.dst.x > (_X - player.dst.w))
+        player.dst.x = _X - player.dst.w;
+    if(player.dst.x < 0)
+        player.dst.x = 0;
+    if(player.dst.y < 0)
+        player.dst.y = 0;
+    if(player.dst.y > (_Y - player.dst.h))
+        player.dst.y = _Y - player.dst.h;
 
     tmpe = fe;
     while (tmpe) {
@@ -247,6 +251,23 @@ void loadPlayer() {
     player.dst.y = _Y-100;
     player.dst.h = player.img->h;
     player.dst.w = player.img->w/3;
+    shot.img = SC_LoadImage("data/img/shot.bmp");
+
+    shot.dst.w = shot.img->w;
+    shot.dst.h = shot.img->h;
+}
+void init() {
+    SC_Interceptor.img = SC_LoadImage("data/img/interceptor.bmp");
+    SC_Interceptor.dst.x = 0;
+    SC_Interceptor.dst.y = 0;
+    SC_Interceptor.dst.w = SC_Interceptor.img->w;
+    SC_Interceptor.dst.h = SC_Interceptor.img->h;
+    SC_Interceptor.hp = 100;
+    SC_Interceptor.ap = 1;
+    SC_Interceptor.from = 0;
+    SC_Interceptor.next = NULL;
+    SC_Interceptor.prev = NULL;
+    SC_Interceptor.move = SC_sin;
 }
 int render() {
     SDL_Rect src,dst;
@@ -259,19 +280,20 @@ int render() {
 
         if (((SDL_GetTicks() - lastBgRenderTick) > 40) && 0) {
             lastBgRenderTick = SDL_GetTicks();
-            src.x=background->w/6;
-            src.y=background->h - _Y + bgy;
-            src.w=2*_X/3;
+            src.x=0;
+            src.y=0;
+            src.w=_X;
             src.h=_Y;
 
-            bgy--;
+            bgy++;
 
-            dst.x=_X/6;
-            dst.y=0;
-            dst.w=2*_X/3;
+            dst.x=0;
+            dst.y=0 + bgy;
+            dst.w=_X;
             dst.h=_Y;
 
             SDL_BlitSurface(background,&src,screen,&dst);
+
         }
 
         tmpe = fe;
@@ -279,6 +301,13 @@ int render() {
             SC_DrawPartialSurface(tmpe->dst.x,tmpe->dst.y,tmpe->dst.x,tmpe->dst.y,tmpe->img->w,tmpe->img->h,background,screen);
             tmpe = tmpe->next;
         }
+        tmps = fs;
+        while(tmps) {
+            SC_DrawPartialSurface(tmps->dst.x,tmps->dst.y,tmps->dst.x,tmps->dst.y,tmps->dst.w,tmps->dst.h,background,screen);
+            tmps = tmps->next;
+        }
+
+        SC_DrawPartialSurface(player.dst.x,player.dst.y,player.dst.x,player.dst.y,player.dst.w,player.dst.h,background,screen);
 
         update();
 
@@ -288,7 +317,7 @@ int render() {
         src.h=player.img->h;
 
         if(!screen) {
-            printf("NULL\n");
+            printf("Screen not found! WTF!!\n");
             return 0;
         }
 
@@ -318,7 +347,7 @@ int render() {
         while(tmps) {
             src.w=tmps->dst.w;
             src.h=tmps->dst.h;
-            SDL_FillRect(screen,&(tmps->dst),0xFF0000);
+            SDL_BlitSurface(tmps->img,&src,screen,&(tmps->dst));
             tmps = tmps->next;
         }
 
@@ -343,10 +372,13 @@ int main() {
     printf("Loading Player...");
     loadPlayer();
     printf("\tOK\n");
+    printf("Initializing Units...");
+    init();
+    printf("\tOK\n");
 
     background = SC_LoadImage("data/img/map.bmp");
 
-    SC_DrawSurface(0,0,background,screen);
+    SC_DrawSurface(background->h - _Y,0,background,screen);
 
     srand(time(NULL));
 
