@@ -13,6 +13,7 @@
 
 SDL_Surface *screen;
 SDL_Surface *background;
+double mx,my; /* Mouse X, Mouse Y */
 int bgy=0;
 int lastRenderTick=0;
 int lastBgRenderTick=0;
@@ -33,6 +34,15 @@ void makeShot() {
     *ls = shot;
     ls->dst.x = player.dst.x + player.dst.w/3 - ls->dst.w/2;
     ls->dst.y = player.dst.y - ls->dst.h;
+    ls->ax = mx - (player.dst.x + player.dst.w/6);
+    ls->ay = my - player.dst.y;
+    if(abs(ls->ax) > abs(ls->ay)) {
+        ls->ay /= abs(ls->ax);
+        ls->ax /= abs(ls->ax);
+    } else {
+        ls->ax /= abs(ls->ay);
+        ls->ay /= abs(ls->ay);
+    }
     if (!fs) {
         ls->next = NULL;
         ls->prev = NULL;
@@ -73,15 +83,19 @@ int events(SDL_Event event) {
                         return 1;
                         break;
                     case SDLK_LEFT:
+                    case SDLK_a:
                         lr--;
                         break;
                     case SDLK_UP:
+                    case SDLK_w:
                         ud--;
                         break;
                     case SDLK_RIGHT:
+                    case SDLK_d:
                         lr++;
                         break;
                     case SDLK_DOWN:
+                    case SDLK_s:
                         ud++;
                         break;
                     case SDLK_SPACE:
@@ -94,15 +108,19 @@ int events(SDL_Event event) {
             case SDL_KEYUP:
                 switch(event.key.keysym.sym) {
                     case SDLK_LEFT:
+                    case SDLK_a:
                         lr++;
                         break;
                     case SDLK_UP:
+                    case SDLK_w:
                         ud++;
                         break;
                     case SDLK_RIGHT:
+                    case SDLK_d:
                         lr--;
                         break;
                     case SDLK_DOWN:
+                    case SDLK_s:
                         ud--;
                         break;
                     case SDLK_SPACE:
@@ -111,6 +129,10 @@ int events(SDL_Event event) {
                     default:
                         break;
                 }
+                break;
+            case SDL_MOUSEMOTION:
+                mx = event.button.x;
+                my = event.button.y;
                 break;
             case SDL_QUIT:
                 return 1;
@@ -185,7 +207,8 @@ void update() {
     tmps = fs;
     while(tmps) {
         dummys = tmps->next;
-        tmps->dst.y -= 12;
+        tmps->dst.y += (15*tmps->ay);
+        tmps->dst.x += (15*tmps->ax);
         if(tmps->dst.y <= 0){
             if ((tmps == fs) && (tmps == ls)) {
                 fs = NULL;

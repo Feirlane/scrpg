@@ -3,8 +3,7 @@ struct SC_Unit {
     SDL_Rect dst;
     int hp;
     int ap;
-    double ax,ay;
-    double center;
+    double ax,ay; /* Speed vector (ax,ay) */
     double from;
     double (*move)(double);
     struct SC_Unit* next;
@@ -13,8 +12,9 @@ struct SC_Unit {
 struct SC_Shot {
     SDL_Surface* img;
     SDL_Rect dst;
-    struct SC_Shot* next;
-    struct SC_Shot* prev;
+    double ax,ay; /* Speed vector (ax,ay) */
+    struct SC_Shot* next; /* Next Shot */
+    struct SC_Shot* prev; /* Previous Shot */
 };
 
 struct SC_Unit SC_Interceptor;
