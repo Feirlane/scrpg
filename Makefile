@@ -1,7 +1,7 @@
 CC=grc gcc
 
 CFLAGS= -g -O2 -Wall --pedantic -Werror
-LDFLAGS= -lSDL -lm
+LDFLAGS= -lSDL -lm -lSDL_image
 EXE=scrpg
 #CFLAGS= -O9
 

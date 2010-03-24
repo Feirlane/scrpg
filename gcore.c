@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "SDL/SDL.h"
+#include "SDL/SDL_image.h"
 
 SDL_Surface* SC_InitVideo(int x, int y, int depth) {
 	SDL_Surface *surface;
@@ -20,7 +21,7 @@ SDL_Surface* SC_LoadImage(char* filename) {
 	SDL_Surface *temp;
 	SDL_Surface *image;
 
-	temp = SDL_LoadBMP(filename);
+	temp = IMG_Load(filename);
 
 	if (temp == NULL) {
 		printf("Unable to load BMP:%s\n",SDL_GetError());

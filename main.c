@@ -24,6 +24,7 @@ int lastEnemyTick = 0;
 struct SC_Shot *fs=NULL, *ls=NULL, *tmps=NULL;
 int lastShotTick = 0;
 int points=0;
+double playerSin, playerCos;
 
 double SC_sin (double x) {
     return 100*sin(x/50);
@@ -32,7 +33,7 @@ void makeShot() {
     tmps = ls;
     ls = malloc(sizeof(struct SC_Shot));
     *ls = shot;
-    ls->dst.x = player.dst.x + player.dst.w/3 - ls->dst.w/2;
+    ls->dst.x = player.dst.x + player.dst.w/3 + ls->dst.w/2;
     ls->dst.y = player.dst.y - ls->dst.h;
     ls->ax = mx - (player.dst.x + player.dst.w/6);
     ls->ay = my - player.dst.y;
@@ -72,6 +73,8 @@ void makeEnemy(int from,struct SC_Unit unit) {
 }
  
 int events(SDL_Event event) {
+    double hyp,op,co;
+
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_KEYDOWN:
@@ -133,6 +136,21 @@ int events(SDL_Event event) {
             case SDL_MOUSEMOTION:
                 mx = event.button.x;
                 my = event.button.y;
+
+                op = (player.dst.y + player.dst.h/2) - my;
+                co = (player.dst.x + player.dst.w/2) - mx;
+                hyp = (sqrt(pow(((player.dst.x + player.dst.w/2) - mx),2) + pow(((player.dst.y + player.dst.h/2) - my),2)));
+
+                printf("%1.1f %1.1f %1.1f\n", op, co, hyp)
+
+                if (!hyp)
+                    hyp = 0.00001;
+
+                playerSin = op / hyp;
+                playerCos = co / hyp;
+
+                playerCos *= -1;
+
                 break;
             case SDL_QUIT:
                 return 1;
@@ -232,8 +250,8 @@ void update() {
         dummye = tmpe->next;
         if (((player.dst.x + player.dst.w > tmpe->dst.x) && (player.dst.x < tmpe->dst.x + tmpe->dst.w))){
             if(((player.dst.y + player.dst.h) > tmpe->dst.y) && (player.dst.y < (tmpe->dst.y + tmpe->dst.h))){
-                player.dst.x = -200;
-                player.dst.y = -200;
+                player.dst.x = 0;
+                player.dst.y = 0;
             }
         }
         tmps = fs;
@@ -253,7 +271,22 @@ void update() {
                     } else {
                         tmpe->prev->next = tmpe->next;
                         tmpe->next->prev = tmpe->prev;
+                    
                     }
+                    if((tmps == fs) && (tmps == ls)) {
+                        fs = NULL;
+                        ls = NULL;
+                    } else if (tmps == fs) {
+                        fs = tmps->next;
+                        fs->prev = NULL;
+                    } else if (tmps == ls) {
+                        ls = tmps->prev;
+                        ls->next = NULL;
+                    } else {
+                        tmps->prev->next = tmps->next;
+                        tmps->next->prev = tmps->prev;
+                    }
+                    free(tmps);
                     free(tmpe);
                     points+=2;
                     break;
@@ -267,13 +300,13 @@ void update() {
 }
 
 void loadPlayer() {
-    player.img = SC_LoadImage("data/img/wraith.bmp");
+    player.img = SC_LoadImage("data/img/def1.png");
     player.hp = 100;
     player.ap = 10;
     player.dst.x = _X/2;
     player.dst.y = _Y-100;
-    player.dst.h = player.img->h;
-    player.dst.w = player.img->w/3;
+    player.dst.h = 44;
+    player.dst.w = 52;
     shot.img = SC_LoadImage("data/img/shot.bmp");
 
     shot.dst.w = shot.img->w;
@@ -334,10 +367,13 @@ int render() {
 
         update();
 
-        src.x=(player.img->w/3) + (player.img->w/3*lr);
+        src.x=(player.dst.w*7) + (player.dst.w*(int)(playerCos*8));
         src.y=0;
-        src.w=player.img->w/3;
-        src.h=player.img->h;
+        if(playerSin < 0)
+            src.y=45;
+        printf("%d %1.1f\n",src.x,playerCos);
+        src.w=player.dst.w;
+        src.h=player.dst.h;
 
         if(!screen) {
             printf("Screen not found! WTF!!\n");
