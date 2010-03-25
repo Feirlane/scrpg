@@ -141,15 +141,13 @@ int events(SDL_Event event) {
                 co = (player.dst.x + player.dst.w/2) - mx;
                 hyp = (sqrt(pow(((player.dst.x + player.dst.w/2) - mx),2) + pow(((player.dst.y + player.dst.h/2) - my),2)));
 
-                printf("%1.1f %1.1f %1.1f\n", op, co, hyp)
+                printf("%1.1f %1.1f %1.1f\n", op, co, hyp);
 
-                if (!hyp)
-                    hyp = 0.00001;
-
-                playerSin = op / hyp;
-                playerCos = co / hyp;
-
-                playerCos *= -1;
+                if (hyp) {
+                    playerSin = op / hyp;
+                    playerCos = co / hyp;
+                    playerCos *= -1;
+                }
 
                 break;
             case SDL_QUIT:
@@ -371,7 +369,7 @@ int render() {
         src.y=0;
         if(playerSin < 0)
             src.y=45;
-        printf("%d %1.1f\n",src.x,playerCos);
+        printf("X:%d Y:%d cos:%1.1f\n",src.x,src.y,playerCos);
         src.w=player.dst.w;
         src.h=player.dst.h;
 
@@ -379,6 +377,7 @@ int render() {
             printf("Screen not found! WTF!!\n");
             return 0;
         }
+        printf("BlitPlayer [%d %d %d %d] [%d %d %d %d]\n",src.x,src.y,src.w,src.h,player.dst.x,player.dst.y,player.dst.h,player.dst.w);
 
         SDL_BlitSurface(player.img,&src,screen,&(player.dst));
 
