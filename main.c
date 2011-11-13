@@ -26,8 +26,8 @@ int lastShotTick = 0;
 int points=0;
 double playerSin, playerCos;
 
-double SC_sin (double x) {
-    return 100*sin(x/50);
+double SC_sin (double x,int A, int f) {
+    return A*sin(x/f);
 }
 void makeShot() {
     tmps = ls;
@@ -61,6 +61,8 @@ void makeEnemy(int from,struct SC_Unit unit) {
     *le = unit;
     le->from = from;
     le->dst.y = 10;
+    le->amplitude = (rand()%80)+30;
+    le->frequency = (rand()%10)+30;
     if(fe == NULL) {
         le->prev = NULL;
         le->next = NULL;
@@ -141,7 +143,7 @@ int events(SDL_Event event) {
                 co = (player.dst.x + player.dst.w/2) - mx;
                 hyp = (sqrt(pow(((player.dst.x + player.dst.w/2) - mx),2) + pow(((player.dst.y + player.dst.h/2) - my),2)));
 
-                printf("%1.1f %1.1f %1.1f\n", op, co, hyp);
+/*                printf("%1.1f %1.1f %1.1f\n", op, co, hyp); */
 
                 if (hyp) {
                     playerSin = op / hyp;
@@ -164,7 +166,7 @@ void update() {
     struct SC_Shot *dummys;
 
     if((SDL_GetTicks() - lastEnemyTick) > 200) {
-        makeEnemy((_X/2 + ((rand()%300) - 150)), SC_Interceptor);
+        makeEnemy((rand()%_X), SC_Interceptor);
         lastEnemyTick = SDL_GetTicks();
     }
 
@@ -198,7 +200,7 @@ void update() {
 
     tmpe = fe;
     while (tmpe) {
-        tmpe->dst.x = tmpe->from + tmpe->move(tmpe->dst.y);
+        tmpe->dst.x = tmpe->from + tmpe->move(tmpe->dst.y,tmpe->amplitude,tmpe->frequency);
         tmpe->dst.y += 3;
 
         dummye = tmpe->next;
@@ -216,6 +218,7 @@ void update() {
                 tmpe->prev->next = tmpe->next;
                 tmpe->next->prev = tmpe->prev;
             }
+            points++;
             free(tmpe);
         }
         tmpe = dummye;
@@ -298,7 +301,7 @@ void update() {
 }
 
 void loadPlayer() {
-    player.img = SC_LoadImage("data/img/def1.png");
+    player.img = SC_LoadImage("data/img/def1.bmp");
     player.hp = 100;
     player.ap = 10;
     player.dst.x = _X/2;
@@ -369,7 +372,7 @@ int render() {
         src.y=0;
         if(playerSin < 0)
             src.y=45;
-        printf("X:%d Y:%d cos:%1.1f\n",src.x,src.y,playerCos);
+/*        printf("X:%d Y:%d cos:%1.1f\n",src.x,src.y,playerCos); */
         src.w=player.dst.w;
         src.h=player.dst.h;
 
@@ -377,7 +380,7 @@ int render() {
             printf("Screen not found! WTF!!\n");
             return 0;
         }
-        printf("BlitPlayer [%d %d %d %d] [%d %d %d %d]\n",src.x,src.y,src.w,src.h,player.dst.x,player.dst.y,player.dst.h,player.dst.w);
+/*        printf("BlitPlayer [%d %d %d %d] [%d %d %d %d]\n",src.x,src.y,src.w,src.h,player.dst.x,player.dst.y,player.dst.h,player.dst.w); */
 
         SDL_BlitSurface(player.img,&src,screen,&(player.dst));
 
