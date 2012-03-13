@@ -30,11 +30,19 @@ double SC_sin (double x,int A, int f) {
     return A*sin(x/f);
 }
 void makeShot() {
+    double sin, cos;
+    double co,cc,h;
+
+    cc = mx - (player.dst.x + player.dst.w/2);
+    co = my - (player.dst.y + player.dst.h/2);
+    h = sqrt(cc*cc+co*co);
+    sin = co/h;
+    cos = cc/h;
     tmps = ls;
     ls = malloc(sizeof(struct SC_Shot));
     *ls = shot;
-    ls->dst.x = player.dst.x + player.dst.w/3 + ls->dst.w/2;
-    ls->dst.y = player.dst.y - ls->dst.h;
+    ls->dst.x = player.dst.x + player.dst.w/2 - shot.dst.w/2 + (player.dst.w/2) * cos;
+    ls->dst.y = player.dst.y + (player.dst.h/2) + shot.dst.h/2 + (player.dst.h/2) * sin;
     ls->ax = mx - (player.dst.x + player.dst.w/6);
     ls->ay = my - player.dst.y;
     if(abs(ls->ax) > abs(ls->ay)) {
